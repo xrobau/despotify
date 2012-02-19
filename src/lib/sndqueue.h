@@ -76,4 +76,5 @@ long snd_pcm_read(struct despotify_session* ds,
                   char *buffer, int length, int bigendianp,
                   int word, int sgned, int *bitstream);
 int snd_get_pcm(struct despotify_session*, struct ds_pcm_data*);
+int snd_get_raw(struct despotify_session*, char* buf, int length);
 #endif

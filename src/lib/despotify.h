@@ -7,7 +7,7 @@
 
 #define STRING_LENGTH 256
 #define MAX_SEARCH_RESULTS 100 /* max search results per request */
-#define SUBSTREAM_SIZE (100 * 1024)
+#define SUBSTREAM_SIZE (1000 * 1024)
 #define TIMEOUT 10 /* timeout in seconds */
 
 struct ds_track
@@ -313,6 +313,7 @@ bool despotify_stop(struct despotify_session *ds);
 struct ds_track* despotify_get_current_track(struct despotify_session* ds);
 
 int despotify_get_pcm(struct despotify_session*, struct ds_pcm_data*);
+int despotify_get_raw(struct despotify_session*, char* buf, int length);
 
 /* URI utils */
 struct ds_link* despotify_link_from_uri(const char* uri);

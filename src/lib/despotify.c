@@ -431,10 +431,11 @@ bool despotify_play(struct despotify_session* ds,
         snd_init(ds);
 
     /* notify server we're starting playback */
-    if (packet_write(ds->session, CMD_TOKENNOTIFY, NULL, 0)) {
+    // or don't...?
+    /*if (packet_write(ds->session, CMD_TOKENNOTIFY, NULL, 0)) {
         DSFYDEBUG("packet_write(CMD_TOKENNOTIFY) failed\n");
         return false;
-    }
+    }*/
 
     ds->track = t;
     ds->play_as_list = play_as_list;
@@ -768,7 +769,7 @@ struct ds_search_result* despotify_search_more(struct despotify_session *ds,
         t = t->next = calloc(1, sizeof(struct ds_track));
 
         ds->playlist->num_tracks += xml_parse_tracklist(t, b->ptr, b->len,
-                                                        false, ds->high_bitrate);
+                                                        false, ds->high_bitrate, ds);
         buf_free(b);
     }
 
@@ -830,7 +831,7 @@ static bool despotify_load_tracks(struct despotify_session *ds, bool cache_do_st
 
             if ((data = cache_load(tracks_hash, &len)) != NULL) {
                 track_count += xml_parse_tracklist(firsttrack, data, len,
-                                               true, ds->high_bitrate);
+                                               true, ds->high_bitrate, ds);
                 free(data);
 
                 continue;
@@ -861,7 +862,7 @@ static bool despotify_load_tracks(struct despotify_session *ds, bool cache_do_st
                 cache_store(tracks_hash, b->ptr, b->len);
 
             track_count += xml_parse_tracklist(firsttrack, b->ptr, b->len,
-                                               true, ds->high_bitrate);
+                                               true, ds->high_bitrate, ds);
             buf_free(b);
         }
 
@@ -1382,7 +1383,7 @@ struct ds_track* despotify_get_tracks(struct despotify_session* ds, char* track_
 
     struct buf* b = despotify_inflate(ds->response->ptr, ds->response->len);
     if (b) {
-        xml_parse_tracklist(first, b->ptr, b->len, false, ds->high_bitrate);
+        xml_parse_tracklist(first, b->ptr, b->len, false, ds->high_bitrate, ds);
         buf_free(b);
     }
 
@@ -1639,4 +1640,9 @@ char* despotify_track_to_uri(struct ds_track* track, char* dest)
 int despotify_get_pcm(struct despotify_session* ds, struct ds_pcm_data* pcm)
 {
     return snd_get_pcm(ds, pcm);
+}
+
+int despotify_get_raw(struct despotify_session* ds, char* buf, int length)
+{
+   return snd_get_raw(ds, buf, length);
 }

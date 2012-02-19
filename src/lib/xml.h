@@ -27,7 +27,8 @@ int xml_parse_tracklist(struct ds_track* firsttrack,
                         unsigned char* xml,
                         int len,
                         bool ordered,
-                        bool high_bitrate);
+                        bool high_bitrate,
+			struct despotify_session* ds);
 
 bool xml_parse_browse_artist(struct ds_artist_browse* a,
                              unsigned char* xml,

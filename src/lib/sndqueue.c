@@ -765,3 +765,23 @@ int snd_get_pcm(struct despotify_session* ds, struct ds_pcm_data* pcm)
     	return -3;
     }
 }
+
+static int raw_consume(void* source, int bytes, void* private, int offset)
+{
+    memcpy(private, source, bytes);
+    return bytes;
+}
+
+int snd_get_raw(struct despotify_session* ds, char* buf, int length)
+{
+    if (!ds || !ds->fifo || !ds->fifo->start) {
+        shortsleep();
+        return 0;
+    }
+
+    /* top up fifo */
+    snd_fill_fifo(ds);
+
+
+    return snd_consume_data(ds, length, buf, raw_consume);
+}

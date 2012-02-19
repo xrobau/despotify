@@ -173,7 +173,7 @@ void xml_free_playlist(struct ds_playlist* pl)
     }
 }
 
-static int parse_tracks(ezxml_t xml, struct ds_track* t, bool ordered, bool high_bitrate)
+static int parse_tracks(ezxml_t xml, struct ds_track* t, bool ordered, bool high_bitrate, struct despotify_session* ds)
 {
     int track_count = 0;
     struct ds_track* prev = NULL;
@@ -249,7 +249,56 @@ static int parse_tracks(ezxml_t xml, struct ds_track* t, bool ordered, bool high
             preva = artist;
         }
 
-        for ( ezxml_t file = ezxml_get(track, "files",0, "file",-1); file; file = file->next) {
+        ezxml_t files;
+        ezxml_t found_alternative = 0;
+        ezxml_t alternatives = ezxml_get(track, "alternatives", -1);
+        if(alternatives != NULL && ds != NULL)
+        {
+                for (ezxml_t c_track = ezxml_get(alternatives, "track",-1); c_track; c_track = c_track->next)
+                {
+                        for ( ezxml_t restriction = ezxml_get(c_track, "restrictions", 0, "restriction", -1); restriction; restriction = restriction->next) {
+                                char* allowed = (char*)ezxml_attr(restriction, "allowed");
+                                char* forbidden = (char*)ezxml_attr(restriction, "forbidden");
+                                char *catalogues = (char*)ezxml_attr(restriction, "catalogues");
+                                if(strstr(catalogues, ds->user_info->type) != NULL)
+                                {
+                                        if(allowed)
+                                        {
+                                                if(strstr(allowed, ds->user_info->country) != NULL)
+                                                {
+                                                        found_alternative = c_track;
+                                                        break;
+                                                }
+                                        }
+                                        if(forbidden)
+                                        {
+                                                if(strstr(forbidden, ds->user_info->country) == NULL)
+                                                {
+                                                        found_alternative = c_track;
+                                                        break;
+                                                }
+                                        }
+                                }
+                        }
+                }
+
+                if(found_alternative != 0)
+                {
+                        xmlstrncpy(t->track_id, sizeof t->track_id, found_alternative, "id", -1);
+                        files = ezxml_get(found_alternative, "files", -1);
+                }
+                else
+                {
+                        files = ezxml_get(track, "files", -1);
+                }
+        }
+        else
+        {
+                files = ezxml_get(track, "files", -1);
+        }
+
+        for ( ezxml_t file = ezxml_get(files, "file",-1); file; file = file->next) {
+
             char* fmt = (char*)ezxml_attr(file, "format");
             if (fmt) {
                 unsigned int bitrate;
@@ -354,7 +403,7 @@ static void parse_browse_album(ezxml_t top, struct ds_album_browse* a, bool high
     /* TODO: support multiple discs per album  */
     a->tracks = calloc(1, sizeof(struct ds_track));
     ezxml_t disc = ezxml_get(top, "discs",0,"disc", -1);
-    a->num_tracks = parse_tracks(disc, a->tracks, false, high_bitrate);
+    a->num_tracks = parse_tracks(disc, a->tracks, false, high_bitrate, NULL);
 
     /* Copy missing metadata from album to tracks */
     int count = 0;
@@ -372,12 +421,13 @@ int xml_parse_tracklist(struct ds_track* firsttrack,
                         unsigned char* xml,
                         int len,
                         bool ordered,
-                        bool high_bitrate)
+                        bool high_bitrate,
+			struct despotify_session* ds)
 {
     ezxml_t top = ezxml_parse_str(xml, len);
 
     ezxml_t tracks = ezxml_get(top, "tracks",-1);
-    int num_tracks = parse_tracks(tracks, firsttrack, ordered, high_bitrate);
+    int num_tracks = parse_tracks(tracks, firsttrack, ordered, high_bitrate, ds);
     ezxml_free(top);
 
     return num_tracks;
@@ -427,7 +477,7 @@ int xml_parse_search(struct ds_search_result* search,
     }
 
     ezxml_t tracks = ezxml_get(top, "tracks",-1);
-    int num_tracks = parse_tracks(tracks, firsttrack, false, high_bitrate);
+    int num_tracks = parse_tracks(tracks, firsttrack, false, high_bitrate, NULL);
 
     ezxml_free(top);
 
