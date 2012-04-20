@@ -17,6 +17,10 @@ ifeq ($(shell uname -s),Darwin)
     # The default ncurses library on Mac OS X supports wide characters
     # so force linking with the one in /usr/lib
     LDFLAGS = -L/usr/lib -lncurses -framework CoreAudio
+else ifeq ($(shell uname -i),BCM2708)
+    DESPOTIFY_OBJS += rpi_audio.o
+    LDFLAGS += -lncursesw -L${RPI_SDK}/lib/ -lGLESv2 -lEGL -lopenmaxil -lbcm_host ${RPI_SDK}/src/hello_pi/libs/libilclient.a -lpthread
+    CFLAGS += -DHAVE_LIBOPENMAX=2 -DOMX -DOMX_SKIP64BIT -ftree-vectorize -pipe -DUSE_EXTERNAL_OMX -DHAVE_LIBBCM_HOST -DUSE_EXTERNAL_LIBBCM_HOST -DUSE_VCHIQ_ARM -Wno-psabi -I${RPI_SDK}/include/ -I${RPI_SDK}/src/hello_pi/libs
 else ifeq ($(shell uname -s),Linux)
     DESPOTIFY_OBJS += libao.o
     LDFLAGS += -lncursesw -lao

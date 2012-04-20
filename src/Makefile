@@ -5,6 +5,8 @@
 
 export
 
+RPI_SDK="/opt/vc"
+
 CFLAGS = -Wall -Wextra -ggdb -std=gnu99
 LDFLAGS = -lz
 

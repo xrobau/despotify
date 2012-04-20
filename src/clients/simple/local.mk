@@ -9,6 +9,10 @@ CFLAGS += -I$(LIBDIR)
 ifeq ($(shell uname -s),Darwin)
  OBJS += coreaudio.o
  LDFLAGS += -framework CoreAudio
+else ifeq ($(shell uname -i),BCM2708)
+ OBJS += rpi_audio.o
+ LDFLAGS += -L${RPI_SDK}/lib/ -lGLESv2 -lEGL -lopenmaxil -lbcm_host ${RPI_SDK}/src/hello_pi/libs/libilclient.a -lpthread
+ CFLAGS += -DHAVE_LIBOPENMAX=2 -DOMX -DOMX_SKIP64BIT -ftree-vectorize -pipe -DUSE_EXTERNAL_OMX -DHAVE_LIBBCM_HOST -DUSE_EXTERNAL_LIBBCM_HOST -DUSE_VCHIQ_ARM -Wno-psabi -I${RPI_SDK}/include/ -I${RPI_SDK}/src/hello_pi/libs
 else ifeq ($(LINUX_BACKEND),libao)
  OBJS += libao.o
  LDFLAGS += -lpthread -lao
