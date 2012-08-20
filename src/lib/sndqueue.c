@@ -10,7 +10,9 @@
 #include <pthread.h>
 #include <assert.h>
 
+#ifdef MP3_SUPPORT
 #include <mpg123.h>
+#endif
 
 #include "sndqueue.h"
 #include "util.h"
@@ -35,8 +37,10 @@ void snd_reset_codec(struct despotify_session* ds) {
 		ov_clear(ds->vf);
 		DSFYfree(ds->vf);
 	} else if ( ds->mf ) {
+#ifdef MP3_SUPPORT
 		mpg123_close(ds->mf);
 		mpg123_delete(ds->mf);
+#endif
 		ds->mf = NULL;
 	}
 }
@@ -468,13 +472,13 @@ size_t snd_ov_read_callback(void *ptr, size_t size, size_t nmemb, void* session)
     return snd_consume_data(ds,size*nmemb,ptr,vorbis_consume);
 }
 
+#ifdef MP3_SUPPORT
 static int mpeg_consume(void* source, int bytes, void* private, int offset)
 {
    (void)offset;
     mpg123_feed(private,source,bytes);
     return bytes;
 }
-
 
 int snd_mpeg_feed_more_data(struct despotify_session* ds) 
 {
@@ -483,6 +487,7 @@ int snd_mpeg_feed_more_data(struct despotify_session* ds)
 
     return snd_consume_data(ds,sizeof(data.buf),ds->mf,mpeg_consume);
 }
+#endif
 
 int snd_do_vorbis(struct despotify_session* ds, struct ds_pcm_data* pcm ) {
     if (!ds->vf) {
@@ -570,6 +575,7 @@ int snd_do_vorbis(struct despotify_session* ds, struct ds_pcm_data* pcm ) {
 }
 
 int snd_do_mpeg(struct despotify_session* ds, struct ds_pcm_data* pcm) {
+#ifdef MP3_SUPPORT
 	int err = MPG123_OK;
 	size_t bytes = 0;
 	long rate;
@@ -689,6 +695,9 @@ int snd_do_mpeg(struct despotify_session* ds, struct ds_pcm_data* pcm) {
 	}
 	
 	return 0;
+#else
+    return -1;
+#endif
 }
 
 int snd_stream_is_vorbis(struct despotify_session* ds) {
