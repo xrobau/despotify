@@ -28,13 +28,18 @@ class Track
 	private $files = array();
 	
 	private $connection;
+
+	private $country;
 	
 	
 	
-	public function __construct($xmlOrId, $connection)
+	public function __construct($xmlOrId, $connection, $country)
 	{
 		// Despotify gateway connection
 		$this->connection = $connection;
+
+		// Country
+		$this->country = $country;
 		
 		// faking multiple constructors, kind of
 		if(is_a($xmlOrId, 'SimpleXMLElement')) // load from XML
@@ -151,7 +156,6 @@ class Track
 			}
 		}
 		
-		
 		// clean up some weird values
 		if(count($this->allowedCountries) == 1 && $this->allowedCountries[0] == '') // empty string
 		{
@@ -162,8 +166,36 @@ class Track
 		{
 			$this->allowedCatalogues = NULL;
 		}
-		
-		//}
+
+		// Alternatives 
+		if (isset($xmlArray['alternatives']))
+		{
+			// This means it's region limited Check to see if we can get it.
+			if (!$this->checkRegion($this->allowedCountries))
+			{
+				// We can't have this file. Do we have an alternative?
+				foreach ($xmlArray['alternatives'] as $track)
+				{
+					$f = $track->restrictions->restriction->attributes()->forbidden;
+					$a = $track->restrictions->restriction->attributes()->allowed;
+
+					// If we're forbidden, we can't. Next.
+					if ($this->checkRegion($f)) 
+						continue;
+
+					// Are we not allowed?
+					if (!$this->checkRegion($a) && $a != "")
+						continue;
+
+					// Woot. We can use this one. 
+					$this->files = array();
+					foreach($track->files->file as $currentFile)
+					{
+						array_push($this->files, new File($currentFile));
+					}
+				}
+			}
+		}
 	}
 	
 	
@@ -299,6 +331,45 @@ class Track
 	{
 		return $this->files;
 	}
+
+	public function subStream($file, $offset, $blocksize, $key)
+	{
+		$this->connection->write(sprintf("substream %40s %u %u %32s\n", $file, $offset, $blocksize, $key));
+
+		if(($length = $this->connection->readHeader()) === false)
+		{
+			return false;
+		}
+
+		$rlen = $blocksize;
+
+                if ($offset == 0) {
+                        $skip = $this->sock_read(167);
+                        $rlen -= 167;
+                }
+
+		$data = $this->connection->read($rlen);
+                return array($rlen, $data);
+        }
+
+	/**
+	* Checks to see if the region array (or name) given to it is OK for the current region
+	* @return true or false
+	*/
+	private function checkRegion($regions)
+	{
+		if (!is_array($regions)) 
+			$regions = array($regions);
+
+		$ok = false;
+		foreach ($regions as $r)
+		{
+			if ($r === $this->country)
+				$ok = true;
+		}
+		return $ok;
+	}
+
 }
 
 ?>

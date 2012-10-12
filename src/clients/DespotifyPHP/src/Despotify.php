@@ -86,6 +86,9 @@ class Despotify
 			// store the returned session id
 			$this->sessionId = $this->connection->read($length);
 			
+			// Set the country
+			$this->setCountry();
+
 			return $this->sessionId;
 		}
 		else // not connected
@@ -236,7 +239,7 @@ class Despotify
 			
 			$xml = new SimpleXMLElement($xmlData);
 			
-			$playlistObject = new Playlist($xml, $this->connection);
+			$playlistObject = new Playlist($xml, $this->connection, $this->country);
 			
 			return $playlistObject;
 		}
@@ -265,7 +268,7 @@ class Despotify
 		
 		foreach($playlistIds as $playlistId)
 		{
-			array_push($playlistArray, new Playlist($playlistId, $this->connection));
+			array_push($playlistArray, new Playlist($playlistId, $this->connection, $this->country));
 		}
 		
 		return $playlistArray;
@@ -315,15 +318,14 @@ class Despotify
 			return false;
 		}
 		
-		return new Track($trackId, $this->connection);
+		return new Track($trackId, $this->connection, $this->country);
 	}
 
 
 	/**
-	* Returns what country Spotify thinks you're coming from
-	* @return Two letter ISO3166 country code.
+	* Sets Despotify->country to the country Spotify thinks you're coming from. Is run automatically on login.
 	*/
-	public function getCountry()
+	private function setCountry()
 	{
                 if($this->isConnected()) // connected
                 {
@@ -337,7 +339,6 @@ class Despotify
 			}
 
 		        $this->country = $this->connection->read(2);
-			return $this->country;
 		}
         }
 }

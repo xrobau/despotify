@@ -16,12 +16,16 @@ class Playlist
 	
 	private $connection;
 	
+	private $country;
 	
-	public function __construct($xmlOrId, $connection = NULL)
+	public function __construct($xmlOrId, $connection = NULL, $country)
 	{
 		// Despotify gateway connection
 		$this->connection = $connection;
 		
+		// Country
+		$this->country = $country;
+
 		if(is_a($xmlOrId, 'SimpleXMLElement')) // load from XML
 		{
 			$xmlObject = $xmlOrId;
@@ -101,7 +105,7 @@ class Playlist
 		{
 			foreach($this->trackIds as $currentTrackId)
 			{
-				array_push($this->tracks, new Track($currentTrackId, $this->connection));
+				array_push($this->tracks, new Track($currentTrackId, $this->connection, $this->country));
 			}
 		}
 
