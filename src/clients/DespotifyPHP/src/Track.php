@@ -24,6 +24,7 @@ class Track
 	private $popularity;
 	private $externalIds;
 	private $allowedCountries;
+	private $forbiddenCountries;
 	private $allowedCatalogues;
 	private $files = array();
 	
@@ -135,9 +136,11 @@ class Track
 		
 		// restrictions
 		$this->allowedCountries = $xmlObject->xpath('restrictions/restriction/@allowed');
-		$this->allowedCountries = explode(',', (string)$this->allowedCountries[0]);
+		$this->allowedCountries = $this->allowedCountries[0];
 		$this->allowedCatalogues = $xmlObject->xpath('restrictions/restriction/@catalogues');
-		$this->allowedCatalogues = explode(',', (string)$this->allowedCatalogues[0]);
+		$this->allowedCatalogues = $this->allowedCatalogues[0];
+		$this->forbiddenCountries =  $xmlObject->xpath('restrictions/restriction/@forbidden');
+		$this->forbiddenCountries = $this->forbiddenCountries[0];
 		
 		// external ids
 		if(!empty($this->externalIds))
@@ -167,24 +170,40 @@ class Track
 			$this->allowedCatalogues = NULL;
 		}
 
-		// Alternatives 
-		if (isset($xmlArray['alternatives']))
+		// Check to see if we can have it.
+		$f = $this->forbiddenCountries;
+		$a = $this->allowedCountries;
+		
+		// If we're explicitly allowed, then it's all good.
+		if ( $this->checkRegion($a))
+			return;
+
+		// Check to see if we're blocked, or, if no-one's allowed.
+		// or
+		// Check to see if forbidden is blank and we're not in the allow list
+		if ( ($this->checkRegion($f) || ( $a == "" && $f == "")) || ($f == "" && !$this->checkRegion($a)) )
 		{
-			// This means it's region limited Check to see if we can get it.
-			if (!$this->checkRegion($this->allowedCountries))
+			// Delete files, we can't get 'em.
+			$this->files = array();
+
+			// Are there lternatives?
+			if (isset($xmlArray['alternatives']))
 			{
-				// We can't have this file. Do we have an alternative?
 				foreach ($xmlArray['alternatives'] as $track)
 				{
 					$f = $track->restrictions->restriction->attributes()->forbidden;
 					$a = $track->restrictions->restriction->attributes()->allowed;
 
 					// If we're forbidden, we can't. Next.
-					if ($this->checkRegion($f)) 
+					if ($this->checkRegion($f))
+						continue;
+
+					// Is no-one allowed?
+					if ( $a == "" && $f == "")
 						continue;
 
 					// Are we not allowed?
-					if (!$this->checkRegion($a) && $a != "")
+					if (!$this->checkRegion($a) && $a != "") 
 						continue;
 
 					// Woot. We can use this one. 
@@ -379,8 +398,7 @@ class Track
 	*/
 	private function checkRegion($regions)
 	{
-		if (!is_array($regions)) 
-			$regions = array($regions);
+		$regions = explode(',', $regions);
 
 		$ok = false;
 		foreach ($regions as $r)
