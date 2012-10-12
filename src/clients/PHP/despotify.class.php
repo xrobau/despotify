@@ -344,8 +344,9 @@ class Despotify {
 					$file = (array)$arr['files'];
 					if ($file) {
 						$tmparr = (array)$file['file'];
-						$track['fileid'] = $tmparr['@attributes']['id'];
-						$track['fileformat'] = $tmparr['@attributes']['format'];
+						foreach ($tmparr as $format) {
+							$track['formats'][(string)$format['format'][0]] = (string)$format['id'][0];
+						}
 					}
 
 					$tracks[] = $track;
