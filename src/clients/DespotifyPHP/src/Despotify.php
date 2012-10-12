@@ -19,6 +19,7 @@ class Despotify
 	
 	private $sessionId;
 	
+	public $country;
 	
 	
 	/**
@@ -316,6 +317,29 @@ class Despotify
 		
 		return new Track($trackId, $this->connection);
 	}
+
+
+	/**
+	* Returns what country Spotify thinks you're coming from
+	* @return Two letter ISO3166 country code.
+	*/
+	public function getCountry()
+	{
+                if($this->isConnected()) // connected
+                {
+			$this->connection->write("country\n");
+
+			$length = $this->connection->readHeader();
+
+			if($length === false)
+			{
+				return false;
+			}
+
+		        $this->country = $this->connection->read(2);
+			return $this->country;
+		}
+        }
 }
 
 
