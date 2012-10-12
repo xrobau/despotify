@@ -332,6 +332,27 @@ class Track
 		return $this->files;
 	}
 
+	public function getKey($fileid, $trackid)
+	{
+
+                $fileid = substr(trim($fileid), 0, 40);
+                $trackid = substr(trim($trackid), 0, 32);
+
+                $this->connection->write("key ".$fileid." ".$trackid."\n");
+                if (($len = $this->connection->readHeader()) === FALSE)
+		{
+                        return false;
+		}
+
+                $output = $this->connection->read($len);
+                $output = str_replace("\0", '', $output);
+                $xml = new SimpleXMLElement($output);
+
+                $key = (array)$xml->xpath("/filekey/key");
+
+                return $key[0];
+        }
+
 	public function subStream($file, $offset, $blocksize, $key)
 	{
 		$this->connection->write(sprintf("substream %40s %u %u %32s\n", $file, $offset, $blocksize, $key));
@@ -341,10 +362,10 @@ class Track
 			return false;
 		}
 
-		$rlen = $blocksize;
+		$rlen = $length;
 
                 if ($offset == 0) {
-                        $skip = $this->sock_read(167);
+                        $skip = $this->connection->read(167);
                         $rlen -= 167;
                 }
 
