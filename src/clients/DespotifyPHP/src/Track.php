@@ -191,15 +191,22 @@ class Track
 			{
 				foreach ($xmlArray['alternatives'] as $track)
 				{
-					$f = $track->restrictions->restriction->attributes()->forbidden;
-					$a = $track->restrictions->restriction->attributes()->allowed;
+					if (isset($track->restrictions->restriction->attributes()->forbidden))
+					{
+						$f = $track->restrictions->restriction->attributes()->forbidden;
+					} 
+
+					if (isset($track->restrictions->restriction->attributes()->allowed))
+					{
+						$a = $track->restrictions->restriction->attributes()->allowed;
+					}
 
 					// If we're forbidden, we can't. Next.
 					if ($this->checkRegion($f))
 						continue;
 
 					// Is no-one allowed?
-					if ( $a == "" && $f == "")
+					if ( (isset($a) && $a == "") && (isset($f) && $f == "") )
 						continue;
 
 					// Are we not allowed?
